@@ -41,27 +41,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           cmake --build build-win --config Release
 
-            - name: Bundle with windeployqt
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          $windeploy = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
-          if (!(Test-Path $windeploy)) { throw "windeployqt.exe not found at $windeploy" }
-
-          $exe = "build-win\Release\CalculatorGUI.exe"
-          if (!(Test-Path $exe)) {
-            $candidate = Get-ChildItem -Path "build-win\Release" -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($candidate) { $exe = $candidate.FullName }
-          }
-          if (!(Test-Path $exe)) { throw "No .exe found in build-win\Release" }
-
-          & $windeploy --release --compiler-runtime --no-translations $exe
-
-          New-Item -ItemType Directory -Force -Path "dist" | Out-Null
-          $exeDir = Split-Path $exe -Parent
-          Copy-Item -Path (Join-Path $exeDir "*") -Destination "dist" -Recurse -Force
-      
+        
       - name: Bundle with windeployqt
         shell: pwsh
         run: |
