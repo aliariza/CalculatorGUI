@@ -13,35 +13,52 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Qt (MSVC)
+      # Safety: ensure no stale CMake cache exists inside repo (in case it was committed before)
+      - name: Clean any existing build dirs in repo
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          Remove-Item -Recurse -Force build, build-release, build-win, dist, dmgroot 2>$null
+
+      - name: Install Qt (MSVC 2022)
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.10.1"
           arch: "win64_msvc2022_64"
           cache: true
 
-      - name: Configure (CMake)
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (CMake -> build-win)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          cmake -S . -B build-win `
+            -G "Visual Studio 17 2022" -A x64 `
+            -D CMAKE_PREFIX_PATH="$env:Qt6_DIR"
 
-      - name: Build
-        run: cmake --build build --config Release
+      - name: Build (Release)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          cmake --build build-win --config Release
 
       - name: Bundle with windeployqt
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
 
-          # Path to Qt bin (contains windeployqt.exe)
-          $qtBin = "${env:Qt6_DIR}\..\..\bin"
+          # Qt bin folder where windeployqt.exe lives
+          $qtBin = Resolve-Path "$env:Qt6_DIR\..\..\bin"
 
-          # Your exe path (most common)
-          $exe = "build\Release\CalculatorGUI.exe"
+          # Prefer typical output location
+          $exe = "build-win\Release\CalculatorGUI.exe"
 
-          # Fallback if your target name differs
+          # Fallback: pick first exe in build-win\Release
           if (!(Test-Path $exe)) {
-            $exe = (Get-ChildItem -Recurse build -Filter *.exe | Select-Object -First 1).FullName
+            $candidate = Get-ChildItem -Path "build-win\Release" -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($candidate) { $exe = $candidate.FullName }
           }
-          if (!(Test-Path $exe)) { throw "No .exe found in build output" }
+
+          if (!(Test-Path $exe)) { throw "No .exe found in build-win\Release" }
 
           & "$qtBin\windeployqt.exe" --release --compiler-runtime --no-translations $exe
 

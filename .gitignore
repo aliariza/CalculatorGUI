@@ -1,5 +1,6 @@
-# CMake build folders
+# CMake / build
 build*/
+build-win/
 cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
@@ -8,16 +9,11 @@ Makefile
 compile_commands.json
 install_manifest.txt
 
-# macOS
-.DS_Store
-
-# Qt / moc / rcc / uic outputs (often under build, but safe)
-moc_*.cpp
-qrc_*.cpp
-ui_*.h
-
-# dist / packaging
+# packaging outputs
 dist/
 dmgroot/
 *.dmg
 *.zip
+
+# macOS
+.DS_Store
