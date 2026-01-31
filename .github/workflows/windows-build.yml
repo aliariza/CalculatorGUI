@@ -41,7 +41,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           cmake --build build-win --config Release
 
-            - name: Bundle with windeployqt
+      - name: Bundle with windeployqt
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
