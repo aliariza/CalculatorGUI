@@ -1,0 +1,60 @@
+name: Windows Build (Qt) + Bundle
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt (MSVC)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.10.1"
+          arch: "win64_msvc2022_64"
+          cache: true
+
+      - name: Configure (CMake)
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Bundle with windeployqt
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          # Path to Qt bin (contains windeployqt.exe)
+          $qtBin = "${env:Qt6_DIR}\..\..\bin"
+
+          # Your exe path (most common)
+          $exe = "build\Release\CalculatorGUI.exe"
+
+          # Fallback if your target name differs
+          if (!(Test-Path $exe)) {
+            $exe = (Get-ChildItem -Recurse build -Filter *.exe | Select-Object -First 1).FullName
+          }
+          if (!(Test-Path $exe)) { throw "No .exe found in build output" }
+
+          & "$qtBin\windeployqt.exe" --release --compiler-runtime --no-translations $exe
+
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item -Recurse -Force (Split-Path $exe -Parent)\* dist\
+
+      - name: Zip artifact
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist\* -DestinationPath CalculatorGUI-Windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CalculatorGUI-Windows
+          path: CalculatorGUI-Windows.zip
