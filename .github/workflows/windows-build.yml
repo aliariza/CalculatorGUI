@@ -13,7 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Safety: ensure no stale CMake cache exists inside repo (in case it was committed before)
       - name: Clean any existing build dirs in repo
         shell: pwsh
         run: |
@@ -26,6 +25,13 @@ jobs:
           version: "6.10.1"
           arch: "win64_msvc2022_64"
           cache: true
+
+      - name: Show Qt env
+        shell: pwsh
+        run: |
+          echo "Qt6_DIR=$env:Qt6_DIR"
+          echo "QT_ROOT_DIR=$env:QT_ROOT_DIR"
+          echo "QT_PLUGIN_PATH=$env:QT_PLUGIN_PATH"
 
       - name: Configure (CMake -> build-win)
         shell: pwsh
@@ -41,7 +47,6 @@ jobs:
           $ErrorActionPreference = "Stop"
           cmake --build build-win --config Release
 
-        
       - name: Bundle with windeployqt
         shell: pwsh
         run: |
@@ -73,9 +78,3 @@ jobs:
         with:
           name: CalculatorGUI-Windows
           path: CalculatorGUI-Windows.zip
-      - name: Show Qt env
-        shell: pwsh
-        run: |
-          echo "Qt6_DIR=$env:Qt6_DIR"
-          echo "QTDIR=$env:QTDIR"
-          echo "PATH=$env:PATH"
