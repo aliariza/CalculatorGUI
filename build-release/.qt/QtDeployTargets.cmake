@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_CalculatorGUI_FILE /Users/alitumay/CPP/CalculatorGUI/build-release/CalculatorGUI.app/Contents/MacOS/CalculatorGUI)
+set(__QT_DEPLOY_TARGET_CalculatorGUI_TYPE EXECUTABLE)
