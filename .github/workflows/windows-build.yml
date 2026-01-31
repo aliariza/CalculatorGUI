@@ -41,18 +41,13 @@ jobs:
           $ErrorActionPreference = "Stop"
           cmake --build build-win --config Release
 
-      - name: Bundle with windeployqt
+            - name: Bundle with windeployqt
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
 
-          # Find windeployqt.exe reliably
-          $windeploy = Get-ChildItem -Path $env:RUNNER_TEMP -Recurse -Filter windeployqt.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $windeploy) {
-            # Fallback: search in common Qt install locations used by install-qt-action
-            $windeploy = Get-ChildItem -Path "C:\Qt" -Recurse -Filter windeployqt.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          }
-          if (-not $windeploy) { throw "windeployqt.exe not found" }
+          $windeploy = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
+          if (!(Test-Path $windeploy)) { throw "windeployqt.exe not found at $windeploy" }
 
           # Find the built EXE
           $exe = "build-win\Release\CalculatorGUI.exe"
@@ -62,7 +57,7 @@ jobs:
           }
           if (!(Test-Path $exe)) { throw "No .exe found in build-win\Release" }
 
-          & $windeploy.FullName --release --compiler-runtime --no-translations $exe
+          & $windeploy --release --compiler-runtime --no-translations $exe
 
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item -Recurse -Force (Split-Path $exe -Parent)\* dist\
