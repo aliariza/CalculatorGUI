@@ -46,21 +46,23 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # Qt bin folder where windeployqt.exe lives
-          $qtBin = Resolve-Path "$env:Qt6_DIR\..\..\bin"
+          # Find windeployqt.exe reliably
+          $windeploy = Get-ChildItem -Path $env:RUNNER_TEMP -Recurse -Filter windeployqt.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $windeploy) {
+            # Fallback: search in common Qt install locations used by install-qt-action
+            $windeploy = Get-ChildItem -Path "C:\Qt" -Recurse -Filter windeployqt.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (-not $windeploy) { throw "windeployqt.exe not found" }
 
-          # Prefer typical output location
+          # Find the built EXE
           $exe = "build-win\Release\CalculatorGUI.exe"
-
-          # Fallback: pick first exe in build-win\Release
           if (!(Test-Path $exe)) {
             $candidate = Get-ChildItem -Path "build-win\Release" -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($candidate) { $exe = $candidate.FullName }
           }
-
           if (!(Test-Path $exe)) { throw "No .exe found in build-win\Release" }
 
-          & "$qtBin\windeployqt.exe" --release --compiler-runtime --no-translations $exe
+          & $windeploy.FullName --release --compiler-runtime --no-translations $exe
 
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item -Recurse -Force (Split-Path $exe -Parent)\* dist\
@@ -75,3 +77,9 @@ jobs:
         with:
           name: CalculatorGUI-Windows
           path: CalculatorGUI-Windows.zip
+      - name: Show Qt env
+        shell: pwsh
+        run: |
+          echo "Qt6_DIR=$env:Qt6_DIR"
+          echo "QTDIR=$env:QTDIR"
+          echo "PATH=$env:PATH"
